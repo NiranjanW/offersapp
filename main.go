@@ -1,18 +1,22 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"offersapp/routes"
 
 	"github.com/gin-gonic/gin"
-	"github.com/jackc/pgx"
+	"github.com/jackc/pgx/v4"
+	"golang.org/x/net/context"
 )
 
 func main() {
 
-	// conn , err := ConnectDB()
+	conn, err := connectDB()
+	if err != nil {
+		return
+	}
 	router := gin.Default()
+	router.Use(dbMiddleWare(*conn))
 	usersGroup := router.Group("users")
 	{
 		usersGroup.POST("register", routes.UserRegister)
@@ -22,7 +26,7 @@ func main() {
 }
 
 func connectDB() (c *pgx.Conn, err error) {
-	conn, err := pgx.Connect(context.Background(), "postgres://posgres:@localhost:5432")
+	conn, err := pgx.Connect(context.Background(), "postgres://posgres:@localhost:5432/offersapp")
 
 	if err != nil {
 		fmt.Println("Error connecting to DB: ", err)
@@ -32,9 +36,10 @@ func connectDB() (c *pgx.Conn, err error) {
 	return conn, err
 }
 
-func dbMiddleware() gin.HandlerFuncs {
+func dbMiddleWare(conn pgx.Conn) gin.HandlerFunc {
 
 	return func(c *gin.Context) {
+		c.Set("db", conn)
 		c.Next()
 	}
 

@@ -1,11 +1,29 @@
 package routes
 
 import (
+	"fmt"
 	"net/http"
+	"offersapp/models"
 
 	"github.com/gin-gonic/gin"
+
+	"github.com/jackc/pgx/v4"
 )
 
 func UserRegister(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"user_id": "some_id"})
+	user := models.User{}
+	err := c.ShouldBindJSON(&user)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	db, _ := c.Get("db")
+	conn := db.(pgx.Conn)
+	err = user.Register(&conn)
+	if err != nil {
+		fmt.Println("Error in user Registration(): ", err.Error())
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"user_id": user.ID})
 }
